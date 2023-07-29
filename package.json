@@ -1,0 +1,24 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/quickbaya/server.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/quickbaya/server/issues"
+  },
+  "homepage": "https://github.com/quickbaya/server#readme",
+  "dependencies": {
+    "joi": "^17.9.2",
+    "jsonwebtoken": "^9.0.1"
+  }
+}

@@ -1,0 +1,83 @@
+const mongooose = require('mongoose')
+const bcrypt = require('bcrypt')
+const joi = require('joi');
+
+const userJoiSchema = joi.object({
+    fullname: joi.string().required(),
+    username: joi.string().alphanum().min(3).max(30).required(),
+    email: joi.string().email().required(),
+    password: joi.string().min(8).max(30).required(),
+    dob: joi.string().required(),
+    img: joi.string(),
+  }).options({ abortEarly: false });
+
+const UserScheme = new mongooose.Schema({
+    fullname: {
+        type: String,
+        required: true
+    },
+    username: {
+        type: String,
+        required: true
+    },
+    email: {
+        type: String,
+        unique: true,
+        required: true
+    },
+    password: {
+        type: String,
+        required: true
+    },
+    dob: {
+        type: String,
+        required: true
+    },
+    img: {
+        type: String,
+    },
+    role: {
+        type: String,
+        enum: ["user", "admin", "superAdmin"],
+        default: "user"
+    }
+}, {timestamps: true});
+
+UserScheme.pre("save", async function (next) {
+
+    const saltRounds = 10;
+    const salt = await bcrypt.genSalt(saltRounds)
+    this.password = await bcrypt.hash(this.password, salt);
+
+});
+
+
+UserScheme.statics.login = async function (email, password) {
+    const user = await this.findOne({ email })
+
+    if (user) {
+        
+        const auth = await bcrypt.compare(password, user.password);
+
+        if (auth) {
+            return user;
+        }
+        throw error("incorrect password")
+    }
+
+    throw error("Incorrect Email")
+}
+
+UserScheme.recovery = async function(email) {
+    const user = await this.findOne({ email })
+
+    if (user) {
+        console.log("exists")
+    }
+    else {
+        console.log("invalid email")
+    }
+}
+
+module.exports = mongooose.model('Users', UserScheme);
+module.exports = userJoiSchema;
