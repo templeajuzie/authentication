@@ -6,7 +6,7 @@ const dotenv = require('dotenv').config();
 const Databaseconnect = () => {
     mongoose.set('strictQuery', false);
 
-    mongoose.connect(localdb, {
+    mongoose.connect(dbString, {
         useNewUrlParser: true,
         useUnifiedTopology: true
     }).then(() => {
