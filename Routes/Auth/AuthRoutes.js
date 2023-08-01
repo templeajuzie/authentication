@@ -1,9 +1,9 @@
 const {
-    handleErrors,
     userCreate,
     userSignin,
     userRecovery,
     userUpdatePassword,
+    singleUser,
     isAuthenticated
 } = require("../../Controllers/AuthControllers");
 
@@ -11,12 +11,13 @@ const { checkUser } = require("../../Middlewares/AuthMiddleWares");
 
 const router = require("express").Router();
 
-router.route("/").post(checkUser);
-router.route("/usercreate").post(userCreate);
+router.route("/").post(isAuthenticated);
+router.route("/signup").post(userCreate);
 
-router.route("/usersignin").post(userSignin);
+router.route("/signin").post(userSignin);
+router.route("/:id").get(singleUser);
 
-router.route("/userrecovery").post(userRecovery);
-router.route("/userupdatepassword").post(userUpdatePassword);
+router.route("/recovery").post(userRecovery);
+router.route("/updatepassword").post(userUpdatePassword);
 
 module.exports = router;
