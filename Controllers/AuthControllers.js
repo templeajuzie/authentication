@@ -15,12 +15,13 @@ const createToken = (id) => {
   });
 };
 
-const userCreate = async (req, res, next) => {
+const userCreate = async (req, res) => {
   const {
     firstName,
     lastName,
     email,
     password,
+    passwordConfirm,
     carType,
     zipCode,
     city,
@@ -29,13 +30,9 @@ const userCreate = async (req, res, next) => {
 
   try {
     const realUserEmail = await User.findOne({ email });
-    const realUserUsername = await User.findOne({ username });
 
     if (realUserEmail) {
       throw new CustomError.AuthenticationError('Email already exists');
-    } else if (realUserUsername) {
-      // return next(new ErrorHandler("username already exist, choose a new one", 400))
-      throw new CustomError.AuthenticationError('username already exists');
     }
 
     const { error, value } = userJoiSchema.validate({
@@ -43,6 +40,7 @@ const userCreate = async (req, res, next) => {
       lastName,
       email,
       password,
+      passwordConfirm,
       carType,
       zipCode,
       city,
@@ -62,15 +60,8 @@ const userCreate = async (req, res, next) => {
       maxAge: maxAge * 1000,
     });
 
-    const activationUrl = `http://localhost:3000/activation/${accesstoken}`;
-
     res.status(StatusCodes.CREATED).json({
-      id: newuser._id,
-      email: newuser.email,
-      fullname: newuser.fullname,
-      username: newuser.username,
-      dob: newuser.dob,
-      img: newuser.img,
+      data: newuser,
       message: 'Congratulation, you now have a brand new account',
     });
   } catch (error) {
@@ -79,7 +70,7 @@ const userCreate = async (req, res, next) => {
   }
 };
 
-const userSignin = async (req, res, next) => {
+const userSignIn = async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -112,7 +103,16 @@ const userSignin = async (req, res, next) => {
   }
 };
 
-const singleUser = async (req, res, next) => {
+const userSignOut = async (req, res) => {
+  try {
+    res.cookie('token', '', { maxAge: 1 });
+    res.status(StatusCodes.OK).json({ message: 'Signout successfully' });
+  } catch (error) {
+    res.status(400).send(error);
+  }
+};
+
+const currentUser = async (req, res) => {
   const id = req.params.id;
 
   try {
@@ -129,37 +129,18 @@ const singleUser = async (req, res, next) => {
   } catch (error) {}
 };
 
-const userRecovery = async (req, res, next) => {
-  try {
-    const { email } = req.body;
-
-    const userexist = await User.findOne({ email });
-
-    const accesstoken = createToken(userexist._id);
-    res.cookie('jwt', `Bearer ${accesstoken}`, {
-      withCredentials: true,
-      httpOnly: false,
-      maxAge: maxAge * 1000,
-    });
-
-    const passwordUpdateUrl = `http://localhost:3000/client/updatepassword/${accesstoken}`;
-
-    if (userexist) {
-      res
-        .status(StatusCodes.OK)
-        .send({ message: `verification email has been sent to ${email}` });
-      console.log(`verification email sent to ${email}`);
-    } else {
-      throw new CustomError.AuthenticationError(`${email}, is not registered`);
-    }
-  } catch (error) {
-    res.status(500).send({ error: error });
-    console.log('Error ' + error.message);
-  }
-};
-
-const userUpdatePassword = async (req, res, next) => {
-  const { password, confirmpassword } = req.body;
+const userUpdate = async (req, res) => {
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    passwordConfirm,
+    carType,
+    zipCode,
+    city,
+    country,
+  } = req.body;
 
   try {
     if (password !== confirmpassword) {
@@ -171,7 +152,17 @@ const userUpdatePassword = async (req, res, next) => {
 
       const uUpdate = await User.findByIdAndUpdate(
         req.params.id,
-        { password: hashedPassword },
+        {
+          firstName,
+          lastName,
+          email,
+          carType,
+          zipCode,
+          city: city,
+          country: country,
+          password: hashedPassword,
+          passwordConfirm: hashedPassword,
+        },
         {
           new: true,
         }
@@ -182,13 +173,14 @@ const userUpdatePassword = async (req, res, next) => {
   } catch (error) {}
 };
 
-const isAuthenticated = (req, res, next) => {};
+const userDelete = async (req, res) => {};
 
 module.exports = {
   userCreate,
-  userSignin,
-  userRecovery,
-  userUpdatePassword,
-  isAuthenticated,
-  singleUser,
+  userUpdate,
+  currentUser,
+  userSignOut,
+
+  userSignIn,
+  userDelete,
 };

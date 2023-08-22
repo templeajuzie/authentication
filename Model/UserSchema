@@ -3,14 +3,13 @@ const bcrypt = require('bcrypt');
 const joi = require('joi');
 const CustomError = require('../Errors');
 
-const UserScheme = new mongooose.Schema(
+const userSchema = new mongooose.Schema(
   {
     firstName: {
       type: String,
       trim: true,
       minlength: 1,
       maxlength: 30,
-      required: [true, 'Firstname is mandatory'],
     },
     lastName: {
       type: String,
@@ -24,7 +23,7 @@ const UserScheme = new mongooose.Schema(
       type: String,
       unique: true,
       minlength: 1,
-      maxlength: 55,
+      maxlength: 60,
       required: [true, 'Email is mandatory'],
     },
     password: {
@@ -33,11 +32,17 @@ const UserScheme = new mongooose.Schema(
       min: 8,
       max: 60,
     },
+    passwordConfirm: {
+      type: String,
+      required: [true, 'Password is mandatory'],
+      min: 8,
+      max: 60,
+    },
     carType: {
       type: String,
       required: [true, 'Car type is mandatory'],
-      enum: ['Convertible', 'SUV', 'TRUCK', 'Minivan', 'OTHER'],
-      default: 'Convertible',
+      enum: ['SEDAN', 'SUV', 'TRUCK', 'Minivan', 'OTHER'],
+      default: 'SEDAN',
     },
     zipCode: {
       type: String,
@@ -60,13 +65,15 @@ const UserScheme = new mongooose.Schema(
   { timestamps: true }
 );
 
-UserScheme.pre('save', async function (next) {
+userSchema.pre('save', async function (next) {
   const saltRounds = 10;
   const salt = await bcrypt.genSalt(saltRounds);
+  this.passwordConfirm = await bcrypt.hash(this.passwordConfirm, salt);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
-UserScheme.statics.login = async function (email, password) {
+userSchema.statics.login = async function (email, password) {
   const user = await this.findOne({ email });
 
   if (user) {
@@ -82,7 +89,7 @@ UserScheme.statics.login = async function (email, password) {
   throw new CustomError.AuthenticationError('invalid email try again.');
 };
 
-UserScheme.recovery = async function (email) {
+userSchema.recovery = async function (email) {
   const user = await this.findOne({ email });
 
   if (user) {
@@ -92,9 +99,9 @@ UserScheme.recovery = async function (email) {
   }
 };
 
-UserScheme.methods.compare = async (password) => {
+userSchema.methods.compare = async (password) => {
   const comparePassword = await bcrypt.compare(password, this.password);
   return comparePassword;
 };
 
-module.exports = mongooose.model('Users', UserScheme);
+module.exports = mongooose.model('testusers', userSchema);
