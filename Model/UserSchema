@@ -1,51 +1,66 @@
-const mongooose = require("mongoose");
-const bcrypt = require("bcrypt");
-const joi = require("joi");
-const CustomError = require("../Errors");
+const mongooose = require('mongoose');
+const bcrypt = require('bcrypt');
+const joi = require('joi');
+const CustomError = require('../Errors');
 
 const UserScheme = new mongooose.Schema(
   {
-    fullname: {
+    firstName: {
       type: String,
-      required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 30,
+      required: [true, 'Firstname is mandatory'],
     },
-    username: {
+    lastName: {
       type: String,
-      unique: true,
-      required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 30,
+      required: [true, 'Lastname is mandatory'],
     },
+
     email: {
       type: String,
       unique: true,
-      required: true,
+      minlength: 1,
+      maxlength: 55,
+      required: [true, 'Email is mandatory'],
     },
     password: {
       type: String,
-      required: true,
+      required: [true, 'Password is mandatory'],
+      min: 8,
+      max: 60,
     },
-    dob: {
+    carType: {
       type: String,
-      required: true,
+      required: [true, 'Car type is mandatory'],
+      enum: ['Convertible', 'SUV', 'TRUCK', 'Minivan', 'OTHER'],
+      default: 'Convertible',
     },
-    img: {
+    zipCode: {
       type: String,
+      required: [true, 'Zip code is mandatory'],
+      trim: true,
     },
-    role: {
+    city: {
       type: String,
-      enum: ["user", "admin", "superAdmin"],
-      default: "user",
+      required: [true, 'City is mandatory'],
+      trim: true,
+      maxlength: 20,
     },
-    accessToken: {
+    country: {
       type: String,
-    },
-    refreshToken: {
-      type: String,
+      required: [true, 'Country is mandatory'],
+      trim: true,
+      maxlength: 20,
     },
   },
   { timestamps: true }
 );
 
-UserScheme.pre("save", async function (next) {
+UserScheme.pre('save', async function (next) {
   const saltRounds = 10;
   const salt = await bcrypt.genSalt(saltRounds);
   this.password = await bcrypt.hash(this.password, salt);
@@ -60,24 +75,20 @@ UserScheme.statics.login = async function (email, password) {
     if (auth) {
       return user;
     }
-    
-    throw new CustomError.AuthenticationError(
-      "invalid password, try again."
-    );
+
+    throw new CustomError.AuthenticationError('invalid password, try again.');
   }
 
-  throw new CustomError.AuthenticationError(
-    "invalid email try again."
-  );
+  throw new CustomError.AuthenticationError('invalid email try again.');
 };
 
 UserScheme.recovery = async function (email) {
   const user = await this.findOne({ email });
 
   if (user) {
-    console.log("exists");
+    console.log('exists');
   } else {
-    console.log("invalid email");
+    console.log('invalid email');
   }
 };
 
@@ -86,4 +97,4 @@ UserScheme.methods.compare = async (password) => {
   return comparePassword;
 };
 
-module.exports = mongooose.model("Users", UserScheme);
+module.exports = mongooose.model('Users', UserScheme);

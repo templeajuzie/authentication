@@ -1,10 +1,9 @@
-const User = require("../Model/UserSchema");
-const userJoiSchema = require("../Utils/userJoiSchema");
-const jwt = require("jsonwebtoken");
-const { StatusCodes } = require("http-status-codes");
-require("dotenv");
-const sendMail = require("../Utils/sendMail");
-const CustomError = require("../Errors");
+const User = require('../Model/UserSchema');
+const userJoiSchema = require('../Utils/userJoiSchema');
+const jwt = require('jsonwebtoken');
+const { StatusCodes } = require('http-status-codes');
+require('dotenv');
+const CustomError = require('../Errors');
 
 const secrete_key = process.env.SECRETE_KEY;
 
@@ -17,36 +16,47 @@ const createToken = (id) => {
 };
 
 const userCreate = async (req, res, next) => {
-  const { fullname, email, password, username, dob, img } = req.body;
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    carType,
+    zipCode,
+    city,
+    country,
+  } = req.body;
 
   try {
     const realUserEmail = await User.findOne({ email });
     const realUserUsername = await User.findOne({ username });
 
     if (realUserEmail) {
-      throw new CustomError.AuthenticationError("Email already exists");
+      throw new CustomError.AuthenticationError('Email already exists');
     } else if (realUserUsername) {
       // return next(new ErrorHandler("username already exist, choose a new one", 400))
-      throw new CustomError.AuthenticationError("username already exists");
+      throw new CustomError.AuthenticationError('username already exists');
     }
 
     const { error, value } = userJoiSchema.validate({
-      fullname,
+      firstName,
+      lastName,
       email,
       password,
-      username,
-      dob,
-      img,
+      carType,
+      zipCode,
+      city,
+      country,
     });
 
     if (error) {
-      res.status(204).json({ message: "Invalid data type" });
+      res.status(204).json({ message: 'Invalid data type' });
     }
 
     const newuser = await User.create(value);
 
     const accesstoken = createToken(newuser._id);
-    res.cookie("token", `Bearer ${accesstoken}`, {
+    res.cookie('token', `Bearer ${accesstoken}`, {
       withCredentials: true,
       httpOnly: false,
       maxAge: maxAge * 1000,
@@ -61,16 +71,10 @@ const userCreate = async (req, res, next) => {
       username: newuser.username,
       dob: newuser.dob,
       img: newuser.img,
-      message: "Congratulation, you now have a brand new account",
-    });
-
-    await sendMail({
-      email: newuser.email,
-      subject: "Activate your account",
-      message: `Hello ${newuser.fullname} Thank you for signing up with Quickbaya! Please click the following link to confirm your e- mail address: ${activationUrl} }`,
+      message: 'Congratulation, you now have a brand new account',
     });
   } catch (error) {
-    res.status(400).json({ message: "Unable to create account" });
+    res.status(400).json({ message: 'Unable to create account' });
     // const errors = handleerrors(err);
   }
 };
@@ -85,7 +89,7 @@ const userSignin = async (req, res, next) => {
       const user = await User.login(email, password);
 
       const accesstoken = createToken(user._id);
-      res.cookie("token", `Bearer ${accesstoken}`, {
+      res.cookie('token', `Bearer ${accesstoken}`, {
         withCredentials: true,
         httpOnly: false,
         maxAge: maxAge * 1000,
@@ -94,17 +98,17 @@ const userSignin = async (req, res, next) => {
         id: user._id,
         email: user.email,
         created: true,
-        message: "account signin successfully",
+        message: 'account signin successfully',
       });
     } else {
       throw new CustomError.AuthenticationError(
-        "invalid email or password, try again."
+        'invalid email or password, try again.'
       );
     }
   } catch (error) {
     res.status(400).send(error);
     // const errors = handleErrors(err);
-    res.json({ meesgae: "errors", created: false });
+    res.json({ meesgae: 'errors', created: false });
   }
 };
 
@@ -118,11 +122,10 @@ const singleUser = async (req, res, next) => {
       return res.status(200).json({ data: checkUser });
     }
 
-    const error = new CustomError.validationError("User not found");
+    const error = new CustomError.validationError('User not found');
     error.statusCode = 404;
-    error.name = "NotFoundError"; // Custom property to distinguish not found errors
+    error.name = 'NotFoundError'; // Custom property to distinguish not found errors
     throw error;
-    
   } catch (error) {}
 };
 
@@ -133,7 +136,7 @@ const userRecovery = async (req, res, next) => {
     const userexist = await User.findOne({ email });
 
     const accesstoken = createToken(userexist._id);
-    res.cookie("jwt", `Bearer ${accesstoken}`, {
+    res.cookie('jwt', `Bearer ${accesstoken}`, {
       withCredentials: true,
       httpOnly: false,
       maxAge: maxAge * 1000,
@@ -142,11 +145,6 @@ const userRecovery = async (req, res, next) => {
     const passwordUpdateUrl = `http://localhost:3000/client/updatepassword/${accesstoken}`;
 
     if (userexist) {
-      await sendMail({
-        email: userexist.email,
-        subject: "Password Recovery",
-        message: `Hello ${userexist.fullname}, Kindly click on this link below to update your password. ${passwordUpdateUrl}`,
-      });
       res
         .status(StatusCodes.OK)
         .send({ message: `verification email has been sent to ${email}` });
@@ -156,7 +154,7 @@ const userRecovery = async (req, res, next) => {
     }
   } catch (error) {
     res.status(500).send({ error: error });
-    console.log("Error " + error.message);
+    console.log('Error ' + error.message);
   }
 };
 
@@ -165,7 +163,7 @@ const userUpdatePassword = async (req, res, next) => {
 
   try {
     if (password !== confirmpassword) {
-      throw new CustomError.AuthenticationError("Password does not match");
+      throw new CustomError.AuthenticationError('Password does not match');
     } else {
       const saltRounds = 10;
       const salt = await bcrypt.genSalt(saltRounds);
