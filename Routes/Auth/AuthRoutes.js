@@ -14,8 +14,8 @@ const router = require('express').Router();
 router.route('/account').post(userCreate);
 router.route('/auth/login').post(userSignIn);
 router.route('/account/').get(checkUser, currentUser);
-router.route('/account').patch(userUpdate);
-router.route('/account').delete(userDelete);
-router.route('/auth/logout').delete(userSignOut);
+router.route('/account').patch(checkUser, userUpdate);
+router.route('/account').delete(checkUser, userDelete);
+router.route('/auth/logout').delete(checkUser, userSignOut);
 
 module.exports = router;

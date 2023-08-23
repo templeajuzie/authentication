@@ -130,50 +130,49 @@ const userSignOut = async (req, res) => {
 };
 
 const userUpdate = async (req, res) => {
-  const {
-    firstName,
-    lastName,
-    email,
-    password,
-    passwordConfirm,
-    carType,
-    zipCode,
-    city,
-    country,
-  } = req.body;
-
   try {
-    if (password !== confirmpassword) {
-      throw new CustomError.AuthenticationError('Password does not match');
-    } else {
-      const saltRounds = 10;
-      const salt = await bcrypt.genSalt(saltRounds);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      const uUpdate = await User.findByIdAndUpdate(
-        req.params.id,
-        {
-          firstName,
-          lastName,
-          email,
-          carType,
-          zipCode,
-          city: city,
-          country: country,
-          password: hashedPassword,
-          passwordConfirm: hashedPassword,
-        },
-        {
-          new: true,
-        }
-      );
-
-      return res.status(StatusCodes.CREATED).json({ data: uUpdate });
+    if (!req.user) {
+      throw new CustomError.NotFoundError('User not found');
     }
-  } catch (error) {}
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      req.body,
+      {
+        new: true,
+      }
+    );
+
+    console.log('Updated user:', updatedUser);
+
+    res.status(StatusCodes.OK).json({
+      message: 'User updated successfully',
+      user: updatedUser,
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      error: 'An error occurred while updating the user',
+    });
+  }
 };
 
-const userDelete = async (req, res) => {};
+const userDelete = async (req, res) => {
+
+  try {
+    if(!req.user){
+      throw new CustomError.NotFoundError('User not found');
+    }
+
+    const deleteUser = await User.findByIdAndDelete(req.user);
+
+    if(deleteUser){
+      res.status(StatusCodes.OK).json({message: 'User deleted successfully'});
+    }
+
+  } catch (error) {
+    
+  }
+};
 
 module.exports = {
   userCreate,

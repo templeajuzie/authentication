@@ -4,12 +4,8 @@ const dotenv = require('dotenv');
 const secrete_key = process.env.SECRETE_KEY;
 
 const checkUser = (req, res, next) => {
-  console.log('loading again...');
-
   const auhtHeader = req.headers.authorization;
   const token = auhtHeader && auhtHeader.split(' ')[1];
-
-  console.log('Token:', token);
 
   if (token) {
     jwt.verify(token, secrete_key, async (error, decodedtoken) => {
@@ -20,11 +16,13 @@ const checkUser = (req, res, next) => {
 
       const user = await User.findById(decodedtoken.id);
       if (user) {
-        res.json(user);
+        // res.json(user);
+        req.user = user;
       } else {
         res.json({ status: false });
-        next();
+        console.log(false);
       }
+      next();
     });
   } else {
     res.json({ status: false });
