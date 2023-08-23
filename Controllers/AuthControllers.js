@@ -15,6 +15,47 @@ const createToken = (id) => {
   });
 };
 
+const userSignIn = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const olduser = await User.findOne({ email });
+
+    if (olduser) {
+      const authenticatedUser = await User.login(email, password);
+
+      if (!authenticatedUser) {
+        throw new CustomError.AuthenticationError(
+          'Invalid email or password, try again.'
+        );
+      }
+
+      const accesstoken = createToken(authenticatedUser._id);
+
+      res.setHeader('Authorization', `Bearer ${accesstoken}`);
+
+      console.log(accesstoken);
+
+      res.status(StatusCodes.OK).json({
+        token: accesstoken,
+        user: {
+          id: authenticatedUser._id,
+          firstName: authenticatedUser.firstName,
+          lastName: authenticatedUser.lastName,
+        },
+      });
+    } else {
+      throw new CustomError.AuthenticationError(
+        'Invalid email or password, try again.'
+      );
+    }
+  } catch (error) {
+    res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: 'An error occurred', created: false });
+  }
+};
+
 const userCreate = async (req, res) => {
   const {
     firstName,
@@ -53,16 +94,8 @@ const userCreate = async (req, res) => {
 
     const newuser = await User.create(value);
 
-    const accesstoken = createToken(newuser._id);
-    res.cookie('token', `Bearer ${accesstoken}`, {
-      withCredentials: true,
-      httpOnly: false,
-      maxAge: maxAge * 1000,
-    });
-
     res.status(StatusCodes.CREATED).json({
       data: newuser,
-      message: 'Congratulation, you now have a brand new account',
     });
   } catch (error) {
     res.status(400).json({ message: 'Unable to create account' });
@@ -70,36 +103,20 @@ const userCreate = async (req, res) => {
   }
 };
 
-const userSignIn = async (req, res) => {
+const currentUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    const olduser = await User.findOne({ email });
-
-    if (olduser) {
-      const user = await User.login(email, password);
-
-      const accesstoken = createToken(user._id);
-      res.cookie('token', `Bearer ${accesstoken}`, {
-        withCredentials: true,
-        httpOnly: false,
-        maxAge: maxAge * 1000,
-      });
-      res.status(StatusCodes.OK).json({
-        id: user._id,
-        email: user.email,
-        created: true,
-        message: 'account signin successfully',
-      });
-    } else {
-      throw new CustomError.AuthenticationError(
-        'invalid email or password, try again.'
-      );
+    console.log('loading');
+    if (req.user) {
+      console.log('yes token is valid');
+      return res.status(200).json({ data: req.user });
     }
+
+    const error = new CustomError.validationError('User not found');
+    error.statusCode = 404;
+    error.name = 'NotFoundError'; // Custom property to distinguish not found errors
+    throw error;
   } catch (error) {
-    res.status(400).send(error);
-    // const errors = handleErrors(err);
-    res.json({ meesgae: 'errors', created: false });
+    res.status(error.statusCode || 500).json({ error: error.message });
   }
 };
 
@@ -110,23 +127,6 @@ const userSignOut = async (req, res) => {
   } catch (error) {
     res.status(400).send(error);
   }
-};
-
-const currentUser = async (req, res) => {
-  const id = req.params.id;
-
-  try {
-    const checkUser = await User.findById(id);
-
-    if (checkUser) {
-      return res.status(200).json({ data: checkUser });
-    }
-
-    const error = new CustomError.validationError('User not found');
-    error.statusCode = 404;
-    error.name = 'NotFoundError'; // Custom property to distinguish not found errors
-    throw error;
-  } catch (error) {}
 };
 
 const userUpdate = async (req, res) => {
