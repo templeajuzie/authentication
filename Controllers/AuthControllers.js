@@ -122,7 +122,11 @@ const currentUser = async (req, res) => {
 
 const userSignOut = async (req, res) => {
   try {
-    res.cookie('token', '', { maxAge: 1 });
+    if(!req.user){
+      throw new CustomError.NotFoundError('User not found');
+    }
+
+    res.setHeader('Authorization', '');
     res.status(StatusCodes.OK).json({ message: 'Signout successfully' });
   } catch (error) {
     res.status(400).send(error);
