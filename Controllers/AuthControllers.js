@@ -99,7 +99,7 @@ const userCreate = async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ message: 'Unable to create account' });
-    // const errors = handleerrors(err);
+
   }
 };
 
@@ -113,7 +113,7 @@ const currentUser = async (req, res) => {
 
     const error = new CustomError.validationError('User not found');
     error.statusCode = 404;
-    error.name = 'NotFoundError'; // Custom property to distinguish not found errors
+    error.name = 'NotFoundError'; 
     throw error;
   } catch (error) {
     res.status(error.statusCode || 500).json({ error: error.message });
